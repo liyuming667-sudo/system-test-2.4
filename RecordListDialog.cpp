@@ -1,66 +1,61 @@
-﻿//
-#include "ReaderListDialog.h"
-
-// 【关键修复】补全 Qt 头文件，特别是 QTableWidgetItem
+#include "RecordListDialog.h"
 #include <QVBoxLayout>
 #include <QTableWidget>
-#include <QTableWidgetItem> 
+#include <QTableWidgetItem>
 #include <QHeaderView>
 #include <QStringList>
 
 // 构造函数
-ReaderListDialog::ReaderListDialog(const std::vector<User>& users,
-    LibraryManager* library,
-    QWidget* parent)
-    : QDialog(parent), users_(users), library_(library)
+RecordListDialog::RecordListDialog(const std::vector<BorrowRecord>& records, QWidget* parent)
+    : QDialog(parent), records_(records)
 {
-    setWindowTitle("用户列表管理");
-    resize(800, 500);
+    setWindowTitle("借阅记录列表");
+    resize(900, 600);
     initUI();
     loadData();
 }
 
-void ReaderListDialog::initUI() {
+RecordListDialog::~RecordListDialog()
+{
+}
+
+void RecordListDialog::initUI() {
     auto* layout = new QVBoxLayout(this);
 
-    // 【关键】此时编译器已经认识 QTableWidget 了
     table_ = new QTableWidget(this);
-
-    // 设置列：账号, 姓名, 联系方式, 身份, 状态, 最大借书数
-    table_->setColumnCount(6);
+    // 设置列：记录ID, 借阅人, ISBN, 借阅时间, 状态
+    table_->setColumnCount(5);
     QStringList headers;
-    headers << "账号" << "姓名" << "联系方式" << "身份" << "状态" << "借书额度";
+    headers << "记录ID" << "借阅人账号" << "图书ISBN" << "借阅时间" << "状态";
     table_->setHorizontalHeaderLabels(headers);
 
     table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table_->setSelectionBehavior(QAbstractItemView::SelectRows);
-    table_->setSelectionMode(QAbstractItemView::SingleSelection);
-
+    
     layout->addWidget(table_);
 }
 
-void ReaderListDialog::loadData() {
-    table_->setRowCount(static_cast<int>(users_.size()));
+void RecordListDialog::loadData() {
+    table_->setRowCount(static_cast<int>(records_.size()));
     int row = 0;
-    for (const auto& u : users_) {
-        // 解析身份
-        QString roleStr;
-        if (u.isSuperAdmin()) roleStr = "最高管理员";
-        else if (u.isAdmin()) roleStr = "管理员";
-        else roleStr = "读者";
-
-        // 解析状态
-        QString status = u.banned() ? "已封禁" : "正常";
-
-        // 【关键】此时编译器已经认识 QTableWidgetItem 了
-        table_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(u.username())));
-        table_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(u.name())));
-        table_->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(u.contact())));
-        table_->setItem(row, 3, new QTableWidgetItem(roleStr));
+    for (const auto& r : records_) {
+        // ID
+        table_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(r.id())));
+        // User
+        table_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(r.username())));
+        // ISBN
+        table_->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(r.isbn())));
+        // Borrow Time
+        table_->setItem(row, 3, new QTableWidgetItem(r.borrowTime().toString("yyyy-MM-dd HH:mm")));
+        
+        // Status
+        QString status = "未归还";
+        if (r.returned()) {
+            status = QString("已归还 (%1)").arg(r.returnTime().toString("yyyy-MM-dd"));
+        }
         table_->setItem(row, 4, new QTableWidgetItem(status));
-        table_->setItem(row, 5, new QTableWidgetItem(QString::number(u.maxBorrow())));
 
-        ++row;
+        row++;
     }
 }
