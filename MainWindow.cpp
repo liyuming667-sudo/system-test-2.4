@@ -202,28 +202,19 @@ void MainWindow::searchBookUI() {
     QString cateKey = QInputDialog::getText(this, "查询图书", "类别关键词（可空）：", QLineEdit::Normal, "", &ok);
     if (!ok) return;
 
-    // ★ 使用 BookListDialog 显示结果
+    // 获取搜索结果
     auto res = lib_->searchBooks(titleKey.toStdString(), authorKey.toStdString(), cateKey.toStdString());
+    
     if (res.empty()) {
         QMessageBox::information(this, "结果", "未找到匹配的图书。");
         return;
     }
-    BookListDialog dlg(nullptr); // 注意：这里需要根据 BookListDialog 的定义修改
-    // 修正：根据之前的逻辑，你可能有两种 BookListDialog 构造函数。
-    // 如果你的 BookListDialog 像我最开始给你的那样只接受 (Manager*)，你就不能传 vector。
-    // 为了兼容你之前给的代码，这里假设你已经把 BookListDialog 改造成支持 vector 数据显示了
-    // 就像 RecordListDialog 一样。
-    // *** 如果 BookListDialog 只能显示所有书，请使用下面这行代替 ***：
-    // dlg.setBooks(res); 
-    // 或者我们保持简单，只在 "showAllBooksUI" 里用表格。这里暂时用 List 还是?
-    // 鉴于你刚才只给了 RecordListDialog 的代码，这里我先不改 BookListDialog 的调用方式。
-    // 重点：请确保 BookListDialog 的构造函数匹配这里的调用。
-}
 
-// 补充修复：根据你之前的 BookListDialog.h，它接收 (LibraryManager*, QWidget*)
-// 所以 showAllBooksUI 应该这样写：
-void MainWindow::showAllBooksUI() {
-    BookListDialog dlg(lib_, this);
+    // 【修正】使用 BookListDialog 显示特定结果
+    // 传入 nullptr 是因为我们不需要它自动加载所有书，而是手动 setBooks
+    BookListDialog dlg(nullptr, this); 
+    dlg.setWindowTitle("查询结果"); // 可选：修改标题
+    dlg.setBooks(res); // 【关键】传入搜索结果
     dlg.exec();
 }
 
@@ -362,4 +353,5 @@ void MainWindow::deleteSelfUI() {
     else {
         QMessageBox::warning(this, "失败", QString::fromStdString(msg));
     }
+
 }
